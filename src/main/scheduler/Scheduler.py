@@ -32,6 +32,7 @@ def create_patient(tokens):
 
     username = tokens[1]
     password = tokens[2]
+
     # check 2: check if the username has been taken already
     if username_exists_patient(username):
         print("Username taken, try again!")
@@ -116,9 +117,6 @@ def username_exists_patient(username):
 
 
 def login_patient(tokens):
-    """
-    TODO: Part 1
-    """
     # login_patient <username> <password>
     # check 1: if someone's already logged-in, they need to log out first
     global current_patient
@@ -257,6 +255,7 @@ def reserve(tokens):
     except ValueError:
         print("Please enter a valid date! Format as mm-dd-yyyy")
         return
+
     # check 4: if the vaccine is available
     vaccine_name = tokens[2]
     doses = 1
@@ -266,7 +265,7 @@ def reserve(tokens):
         return
 
     # check 5: if the vaccine has enough doses
-    if vaccine.available_doses<=0:
+    if vaccine.available_doses <= 0:
         print(vaccine_name + " is out of stock")
         return
 
@@ -274,9 +273,8 @@ def reserve(tokens):
     c_lst = search_caregiver_schedule(tokens[0:2])
     if not c_lst:
         return
-    # print("Available doses left "+str(vaccine.available_doses)+" in stock")
 
-    # uuid
+    # generate an uuid as appointment_id
     try:
         caregiver_name_random = choice(c_lst)
         print("Your caregiver is: " + caregiver_name_random)
@@ -292,7 +290,7 @@ def reserve(tokens):
         in_content = input("Confirm? [y/n]：")
         if in_content == "y":
 
-            # Check 9: check if appointment exists
+            # Check 8: check if appointment exists
             try:
                 cm = ConnectionManager()
                 conn = cm.create_connection()
@@ -308,7 +306,7 @@ def reserve(tokens):
                 print("Error occurred when validation_username")
 
             try:
-                # add appointment
+                # insert an appointment
                 add_appointment = "INSERT INTO Reserve VALUES (%s, %s, %s, %s, %s)"
                 cursor.execute(add_appointment, (
                     appointment_id, reserve_date, vaccine_name, current_patient.username, caregiver_name_random))
@@ -316,7 +314,6 @@ def reserve(tokens):
                 # delete availabilities of caregiver
                 delete_availability = "DELETE FROM Availabilities WHERE Time = %s AND Username = %s"
                 cursor.execute(delete_availability, (reserve_date, caregiver_name_random))
-                # you must call commit() to persist your data if you don't set autocommit to True
                 conn.commit()
                 cm.close_connection()
                 vaccine.decrease_available_doses(1)
@@ -367,6 +364,7 @@ def upload_availability(tokens):
         except pymssql.Error:
             print("Error occurred when checking caregiver availability")
             cm.close_connection()
+
         # continue uploading
         current_caregiver.upload_availability(d)
         print("Availability uploaded!")
@@ -386,13 +384,15 @@ def cancel(tokens):
     if current_caregiver is None and current_patient is None:
         print("Please login first")
         return
-    # check 3: Did not check if the user has access to cancel appointment. because every user can only access their own appointment and the appointment_id is unique
+
+    # check 3: Did not check if the user has access to cancel appointment.
+    # Because every user can only access their own appointment and the appointment_id is unique
     # fetch appointment info
     cm = ConnectionManager()
     conn = cm.create_connection()
     cursor = conn.cursor(as_dict=True)
     get_all = "SELECT * FROM Reserve WHERE appointment_id = %s"
-    # get_vaccine_name = "SELECT Vaccine_name FROM Reserve WHERE appointment_id = %s"
+
     try:
         cursor.execute(get_all, tokens[1])
         for row in cursor:
@@ -525,7 +525,6 @@ def show_appointments(tokens):
                 print("No appointments")
                 return
             print(p_appoint_df)
-            # you must call commit() to persist your data if you don't set autocommit to True
             conn.commit()
         except pymssql.Error:
             print("Error occurred when fetching patient appointment")
@@ -560,7 +559,7 @@ def start():
         print("> login_patient <username> <password>")  #// TODO: implement login_patient (Part 1)
         print("> login_caregiver <username> <password>")
         print("> search_caregiver_schedule <date>")  #// TODO: implement search_caregiver_schedule (Part 2)
-        print("> reserve <date> <vaccine>") #// TODO: implement reserve (Part 2)
+        print("> reserve <date> <vaccine>")  #// TODO: implement reserve (Part 2)
         print("> upload_availability <date>")
         print("> cancel <appointment_id>") #// TODO: implement cancel (extra credit)
         print("> add_doses <vaccine> <number>")
